@@ -36,3 +36,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .cursor/
 target/
 bun.lock
+test_vite_react/
+package-lock.json

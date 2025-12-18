@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/bun": "latest",
     "@types/yargs": "^17.0.35"
   },
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
+    "axios": "^1.13.2",
     "uuid": "^13.0.0",
     "yargs": "^18.0.0"
   }

@@ -7,7 +7,8 @@
     "@types/archiver": "^7.0.0",
     "@types/bun": "latest",
     "@types/prompts": "^2.4.9",
-    "@types/yargs": "^17.0.35"
+    "@types/yargs": "^17.0.35",
+    "prettier": "3.7.4"
   },
   "peerDependencies": {
     "typescript": "^5"

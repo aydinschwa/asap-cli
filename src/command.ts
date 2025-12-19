@@ -4,6 +4,8 @@ import fs from "fs/promises"
 import fsSync from "fs"
 import {once} from "events"
 import path from "path"
+import prompts from "prompts"
+import { generate, count } from "random-words";
 import yargs, {type Argv} from "yargs";
 import {hideBin} from "yargs/helpers"
 import {tmpdir} from "node:os"
@@ -41,12 +43,51 @@ const uploadToAsapSite = async (zipFilePath: string, tag: string) => {
             headers: formData.getHeaders()
         }
     )
-    console.log(response.data)
+    const {message} = response.data
+    console.log(message)
+    return message 
 
 }
 
 const asapDeploy = async (dirPath: string, tag: string) => {
-    const zipFilePath = await zipDir(dirPath)
+    const { projectPath }= await prompts({
+        type: 'text',
+        name: 'projectPath',
+        message: 'Project path:',
+        initial: dirPath,  
+        validate: (value) => {
+          if (!fsSync.existsSync(value)) return 'Directory does not exist';
+          if (!fsSync.lstatSync(value).isDirectory()) return 'Must be a directory';
+          return true;
+        }
+      });
+
+    // let user pick subdomain name if they didn't specify a tag in the deploy command 
+    if (!tag) {
+        const randomSubdomain = (generate({exactly: 3}) as string[]).join("-");
+        const { siteTag } = await prompts({
+            type: 'text',
+            name: 'siteTag',
+            message: 'What subdomain name do you want?',
+            initial: randomSubdomain,
+            validate: (value) => {
+              if (!value) return 'Subdomain name is required';
+              if (!/^[a-z0-9-]+$/.test(value)) return 'Only lowercase letters, numbers, and hyphens allowed';
+              return true;
+            }
+          }, {
+            onCancel: () => {
+              console.log('\nDeploy cancelled');
+              process.exit(0);
+            }
+          });
+
+        tag = siteTag
+
+        console.log(`\n\x1b[1m\x1b[32m✓ Deploying to https://${siteTag}.aydino.com\x1b[0m\n`);
+    }
+
+    const zipFilePath = await zipDir(projectPath)
     await uploadToAsapSite(zipFilePath, tag)
 }
 
@@ -64,9 +105,8 @@ yargs(hideBin(process.argv))
         alias: "t",
         description: "Tag for the deployment",
         type: "string",
-        demandOption: true
     }),
-    (argv) => asapDeploy(argv.filePath || process.cwd(), argv.tag) 
+    (argv) => asapDeploy(argv.filePath || process.cwd(), argv.tag || "") 
 )
 .parse()
 

@@ -6,6 +6,7 @@
   "devDependencies": {
     "@types/archiver": "^7.0.0",
     "@types/bun": "latest",
+    "@types/prompts": "^2.4.9",
     "@types/yargs": "^17.0.35"
   },
   "peerDependencies": {
@@ -17,6 +18,8 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "axios": "^1.13.2",
+    "prompts": "^2.4.2",
+    "random-words": "^2.0.1",
     "uuid": "^13.0.0",
     "yargs": "^18.0.0"
   }

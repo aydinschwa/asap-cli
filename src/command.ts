@@ -5,7 +5,7 @@ import fsSync from "fs";
 import { once } from "events";
 import path from "path";
 import prompts from "prompts";
-import { generate, count } from "random-words";
+import { generate } from "random-words";
 import yargs, { type Argv } from "yargs";
 import { hideBin } from "yargs/helpers";
 import { tmpdir } from "node:os";

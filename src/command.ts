@@ -81,20 +81,25 @@ const asapDeploy = async (dirPath: string, tag: string) => {
 };
 
 yargs(hideBin(process.argv))
+    .scriptName("asap")
+    .usage("$0 <command> [options]")
     .command(
-        "deploy [filePath]",
-        "deploys to asap_site",
+        ["deploy [filePath]", "$0 [filePath]"],
+        "Deploy a static site to asap-static.site",
         (yargs: Argv) =>
             yargs
                 .positional("filePath", {
-                    description: "Optional path to the directory",
+                    describe: "Path to the directory to deploy",
                     type: "string",
+                    default: ".",
                 })
                 .option("tag", {
                     alias: "t",
-                    description: "Tag for the deployment",
+                    describe: "Subdomain name for your site",
                     type: "string",
                 }),
         (argv) => asapDeploy(argv.filePath || process.cwd(), argv.tag || ""),
     )
+    .help("h")
+    .alias("h", "help")
     .parse();

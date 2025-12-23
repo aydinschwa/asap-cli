@@ -1,54 +1,10 @@
-import axios from "axios";
-import FormData from "form-data";
-import fs from "fs/promises";
 import fsSync from "fs";
-import { once } from "events";
-import path from "path";
 import prompts from "prompts";
 import { generate } from "random-words";
 import yargs, { type Argv } from "yargs";
 import { hideBin } from "yargs/helpers";
-import { tmpdir } from "node:os";
-import archiver from "archiver";
-
-const zipDir = async (dirPath: string) => {
-    dirPath = path.resolve(dirPath);
-    const stat = await fs.lstat(dirPath);
-
-    if (!stat.isDirectory()) {
-        console.log(`Must supply a directory! Rejecting ${dirPath}`);
-    }
-
-    const tempDir = await fs.mkdtemp(path.join(tmpdir(), "asap_site_"));
-    const zipFilePath = path.join(tempDir, "archive.zip");
-    const output = fsSync.createWriteStream(zipFilePath);
-
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    archive.pipe(output);
-    archive.directory(dirPath, false);
-    archive.finalize();
-
-    await once(output, "close");
-    return zipFilePath;
-};
-
-const uploadToAsapSite = async (zipFilePath: string, tag: string) => {
-    const formData = new FormData();
-
-    formData.append("zip", fsSync.createReadStream(zipFilePath));
-    formData.append("tag", tag);
-
-    const response = await axios.post(
-        "https://asap-static.site/asap/upload_site",
-        formData,
-        {
-            headers: formData.getHeaders(),
-        },
-    );
-    const { message } = response.data;
-    console.log(message);
-    return message;
-};
+import { uploadToAsapSite, zipDir } from "./utils";
+import path from "path";
 
 const asapDeploy = async (dirPath: string, tag: string) => {
     const { projectPath } = await prompts({
@@ -90,12 +46,38 @@ const asapDeploy = async (dirPath: string, tag: string) => {
         tag = siteTag;
 
         console.log(
-            `\n\x1b[1m\x1b[32m✓ Deploying to https://${siteTag}.asap-static.site\x1b[0m\n`,
+            `\n\x1b[1m\x1b[32m Starting deploy to https://${siteTag}.asap-static.site\x1b[0m\n`,
         );
     }
 
-    const zipFilePath = await zipDir(projectPath);
-    await uploadToAsapSite(zipFilePath, tag);
+    let tempDir: string | null = null
+
+    try {
+        const zipFilePath = await zipDir(projectPath);
+        tempDir = path.dirname(zipFilePath)
+
+        console.log(`\x1b[36m→\x1b[0m Uploading to https://${tag}.asap-static.site...`);
+        await uploadToAsapSite(zipFilePath, tag);
+
+        console.log(`\n\x1b[32m\x1b[1m✓ Deploy successful!\x1b[0m\n`);
+        console.log(`  \x1b[1mYour site is live at:\x1b[0m`);
+        console.log(`  \x1b[36m\x1b[4mhttps://${tag}.asap-static.site\x1b[0m\n`);
+    }
+    catch (error) {
+        console.error(`\n\x1b[31m✗ Deploy failed: ${error instanceof Error ? error.message : String(error)}\x1b[0m\n`);
+        process.exit(1)
+    }
+    finally {
+        if (tempDir) {
+            try {
+                fsSync.rmSync(tempDir, { recursive: true, force: true })
+            }
+            catch (error) {
+                console.log(error)
+            }
+        }
+    }
+
 };
 
 yargs(hideBin(process.argv))

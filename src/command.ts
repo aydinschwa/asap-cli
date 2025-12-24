@@ -64,8 +64,9 @@ const asapDeploy = async (dirPath: string, tag: string) => {
         console.log(`  \x1b[36m\x1b[4mhttps://${tag}.asap-static.site\x1b[0m\n`);
     }
     catch (error) {
-        console.error(`\n\x1b[31m✗ Deploy failed: ${error instanceof Error ? error.message : String(error)}\x1b[0m\n`);
-        process.exit(1)
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`\n\x1b[31m✗ Deploy failed: ${errorMessage}\x1b[0m\n`);
+        process.exit(1);
     }
     finally {
         if (tempDir) {

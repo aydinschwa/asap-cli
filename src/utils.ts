@@ -29,16 +29,21 @@ export const uploadToAsapSite = async (zipFilePath: string, tag: string) => {
     formData.append("zip", fsSync.createReadStream(zipFilePath));
     formData.append("tag", tag);
 
-    const response = await axios.post(
-        "https://asap-static.site/asap/upload_site",
-        formData,
-        {
-            headers: formData.getHeaders(),
-        },
-    );
-
-    const { message } = response.data;
-    return message;
-
+    try {
+        const response = await axios.post(
+            "https://asap-static.site/asap/upload_site",
+            formData,
+            { headers: formData.getHeaders() },
+        );
+        return response.data.message;
+    } catch (error) {
+        // 1. Check if it's an error from the server (e.g. 400 Bad Request)
+        if (axios.isAxiosError(error) && error.response) {
+            const serverMessage = error.response.data?.error
+            throw new Error(serverMessage);
+        }
+        // 2. Otherwise re-throw the original error (network issues, etc)
+        throw error;
+    }
 
 };

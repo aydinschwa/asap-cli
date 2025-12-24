@@ -1,8 +1,18 @@
 {
-  "name": "asap_cli",
+  "name": "asap-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to deploy static sites to asap-static.site",
+  "author": "Aydin Schwartz",
   "module": "index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aydinschwa/asap-cli"
+  },
   "type": "module",
-  "private": true,
+  "private": false,
+  "scripts": {
+    "build": "bun build --compile ./index.ts --outfile asap"
+  },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
     "@types/bun": "latest",

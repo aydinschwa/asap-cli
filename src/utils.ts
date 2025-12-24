@@ -16,7 +16,13 @@ export const zipDir = async (dirPath: string) => {
 
     const archive = archiver("zip", { zlib: { level: 9 } });
     archive.pipe(output);
-    archive.directory(dirPath, false);
+    archive.directory(dirPath, false, (entry) => {
+        // skip uploading dotfiles
+        if (entry.name.split("/").some((part) => part.startsWith("."))) {
+            return false;
+        }
+        return entry;
+    });
     archive.finalize();
 
     await once(output, "close");

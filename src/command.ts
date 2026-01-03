@@ -6,6 +6,9 @@ import yargs, { type Argv } from "yargs";
 import { hideBin } from "yargs/helpers";
 import { deleteFromAsapSite, uploadToAsapSite, zipDir } from "./utils";
 import path from "path";
+import pc from "picocolors";
+import ora from "ora";
+import boxen from "boxen";
 
 const asapDeploy = async (dirPath: string, tag: string) => {
     // create a ~/.asap file if one doesn't exist 
@@ -44,7 +47,7 @@ const asapDeploy = async (dirPath: string, tag: string) => {
             },
             {
                 onCancel: () => {
-                    console.log("\nDeploy cancelled");
+                    console.log(pc.yellow("\nDeploy cancelled"));
                     process.exit(0);
                 },
             },
@@ -53,26 +56,40 @@ const asapDeploy = async (dirPath: string, tag: string) => {
         tag = siteTag;
 
         console.log(
-            `\n\x1b[1m\x1b[32m Starting deploy to https://${siteTag}.asap-static.site\x1b[0m\n`,
+            pc.green(`\nStarting deploy to https://${siteTag}.asap-static.site\n`),
         );
     }
 
     let tempDir: string | null = null
+    const spinner = ora("Preparing upload...").start();
 
     try {
         const zipFilePath = await zipDir(projectPath);
         tempDir = path.dirname(zipFilePath)
 
-        console.log(`\x1b[36m→\x1b[0m Uploading to https://${tag}.asap-static.site...`);
+        spinner.text = `Uploading to https://${tag}.asap-static.site...`;
         await uploadToAsapSite(zipFilePath, tag);
 
-        console.log(`\n\x1b[32m\x1b[1m✓ Deploy successful!\x1b[0m\n`);
-        console.log(`  \x1b[1mYour site is live at:\x1b[0m`);
-        console.log(`  \x1b[36m\x1b[4mhttps://${tag}.asap-static.site\x1b[0m\n`);
+        spinner.succeed(pc.green("Deploy successful!"));
+
+        console.log(
+            boxen(
+                `${pc.bold("Your site is live at:")}\n${pc.cyan(
+                    `https://${tag}.asap-static.site`
+                )}`,
+                {
+                    padding: 1,
+                    margin: 1,
+                    borderStyle: "round",
+                    borderColor: "green",
+                }
+            )
+        );
     }
     catch (error) {
+        spinner.fail(pc.red("Deploy failed"));
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`\n\x1b[31m✗ Deploy failed: ${errorMessage}\x1b[0m\n`);
+        console.error(pc.red(`\nError: ${errorMessage}\n`));
         process.exit(1);
     }
     finally {
@@ -81,7 +98,7 @@ const asapDeploy = async (dirPath: string, tag: string) => {
                 fsSync.rmSync(tempDir, { recursive: true, force: true })
             }
             catch (error) {
-                console.log(error)
+                // Silent cleanup error
             }
         }
     }
@@ -89,13 +106,14 @@ const asapDeploy = async (dirPath: string, tag: string) => {
 };
 
 const asapDestroy = async (tag: string) => {
+    const spinner = ora(`Removing site https://${tag}.asap-static.site...`).start();
     try {
-        console.log(`\x1b[36m→\x1b[0m Removing site https://${tag}.asap-static.site...`);
         await deleteFromAsapSite(tag);
-        console.log(`\n\x1b[32m\x1b[1m✓ Site removed successfully!\x1b[0m\n`);
+        spinner.succeed(pc.green("Site removed successfully!"));
     }
     catch (error) {
-        console.error(`\n\x1b[31m✗ Failed to remove site: ${error} \x1b[0m\n`);
+        spinner.fail(pc.red("Failed to remove site"));
+        console.error(pc.red(`\nError: ${error} \n`));
         process.exit(1);
     }
 
@@ -103,7 +121,13 @@ const asapDestroy = async (tag: string) => {
 
 yargs(hideBin(process.argv))
     .scriptName("asap")
-    .usage("$0 <command> [options]")
+    .usage(
+        boxen(pc.bold(pc.cyan("ASAP CLI")) + "\nDeploy static sites instantly", {
+            padding: 1,
+            borderStyle: "round",
+            borderColor: "cyan",
+        }) + "\n\nUsage: $0 <command> [options]"
+    )
     .command(
         ["deploy [filePath]", "$0 [filePath]"],
         "Deploy a static site to asap-static.site",
@@ -118,7 +142,9 @@ yargs(hideBin(process.argv))
                     alias: "t",
                     describe: "Subdomain name for your site",
                     type: "string",
-                }),
+                })
+                .example("$0 deploy", "Deploy the current directory")
+                .example("$0 deploy ./dist --tag my-site", "Deploy './dist' to my-site.asap-static.site"),
         (argv) => asapDeploy(argv.filePath || process.cwd(), argv.tag || ""),
     )
     .command(
@@ -130,9 +156,11 @@ yargs(hideBin(process.argv))
                     describe: "Site to delete",
                     type: "string",
                     demandOption: true,
-                }),
+                })
+                .example("$0 destroy my-site", "Delete my-site.asap-static.site"),
         (argv) => asapDestroy(argv.tag)
     )
     .help("h")
     .alias("h", "help")
+    .epilogue(pc.dim("For more information, visit https://github.com/aydinschwa/asap-cli"))
     .parse();

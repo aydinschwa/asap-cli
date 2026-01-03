@@ -29,6 +29,9 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "axios": "^1.13.2",
+    "boxen": "^8.0.1",
+    "ora": "^9.0.0",
+    "picocolors": "^1.1.1",
     "prompts": "^2.4.2",
     "random-words": "^2.0.1",
     "uuid": "^13.0.0",

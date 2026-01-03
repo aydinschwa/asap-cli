@@ -4,7 +4,7 @@ import prompts from "prompts";
 import { generate } from "random-words";
 import yargs, { type Argv } from "yargs";
 import { hideBin } from "yargs/helpers";
-import { deleteFromAsapSite, uploadToAsapSite, zipDir } from "./utils";
+import { deleteFromAsapSite, uploadToAsapSite, zipDir, getSiteList } from "./utils";
 import path from "path";
 import pc from "picocolors";
 import ora from "ora";
@@ -105,6 +105,26 @@ const asapDeploy = async (dirPath: string, tag: string) => {
 
 };
 
+const asapList = () => {
+    const siteList = getSiteList();
+    const sites = Object.keys(siteList);
+
+    if (sites.length === 0) {
+        console.log(boxen(pc.yellow("No sites deployed yet."), { padding: 1, borderStyle: "round", borderColor: "yellow" }));
+        return;
+    }
+
+    console.log(boxen(
+        pc.bold(pc.cyan("Your deployed sites:")) + "\n\n" +
+        sites.map(site => `• https://${site}.asap-static.site`).join("\n"),
+        {
+            padding: 1,
+            borderStyle: "round",
+            borderColor: "cyan",
+        }
+    ));
+};
+
 const asapDestroy = async (tag: string) => {
     const spinner = ora(`Removing site https://${tag}.asap-static.site...`).start();
     try {
@@ -146,6 +166,12 @@ yargs(hideBin(process.argv))
                 .example("$0 deploy", "Deploy the current directory")
                 .example("$0 deploy ./dist --tag my-site", "Deploy './dist' to my-site.asap-static.site"),
         (argv) => asapDeploy(argv.filePath || process.cwd(), argv.tag || ""),
+    )
+    .command(
+        "list",
+        "List all your deployed sites",
+        () => { },
+        () => asapList()
     )
     .command(
         "destroy [tag]",

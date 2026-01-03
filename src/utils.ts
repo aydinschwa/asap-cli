@@ -11,7 +11,7 @@ import archiver from "archiver";
 // Helper to manage the local config file
 const getSiteListPath = () => path.join(os.homedir(), ".asap");
 
-const getSiteList = () => {
+export const getSiteList = () => {
     const p = getSiteListPath();
     if (!fsSync.existsSync(p)) return {};
     return JSON.parse(fsSync.readFileSync(p, "utf-8"));

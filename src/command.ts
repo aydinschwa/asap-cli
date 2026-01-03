@@ -1,12 +1,19 @@
 import fsSync from "fs";
+import os from "os";
 import prompts from "prompts";
 import { generate } from "random-words";
 import yargs, { type Argv } from "yargs";
 import { hideBin } from "yargs/helpers";
-import { uploadToAsapSite, zipDir } from "./utils";
+import { deleteFromAsapSite, uploadToAsapSite, zipDir } from "./utils";
 import path from "path";
 
 const asapDeploy = async (dirPath: string, tag: string) => {
+    // create a ~/.asap file if one doesn't exist 
+    const siteListPath = path.join(os.homedir(), ".asap");
+    if (!fsSync.existsSync(siteListPath)) {
+        fsSync.writeFileSync(siteListPath, JSON.stringify({}), "utf-8");
+    }
+
     const { projectPath } = await prompts({
         type: "text",
         name: "projectPath",
@@ -81,6 +88,19 @@ const asapDeploy = async (dirPath: string, tag: string) => {
 
 };
 
+const asapDestroy = async (tag: string) => {
+    try {
+        console.log(`\x1b[36m→\x1b[0m Removing site https://${tag}.asap-static.site...`);
+        await deleteFromAsapSite(tag);
+        console.log(`\n\x1b[32m\x1b[1m✓ Site removed successfully!\x1b[0m\n`);
+    }
+    catch (error) {
+        console.error(`\n\x1b[31m✗ Failed to remove site: ${error} \x1b[0m\n`);
+        process.exit(1);
+    }
+
+}
+
 yargs(hideBin(process.argv))
     .scriptName("asap")
     .usage("$0 <command> [options]")
@@ -100,6 +120,18 @@ yargs(hideBin(process.argv))
                     type: "string",
                 }),
         (argv) => asapDeploy(argv.filePath || process.cwd(), argv.tag || ""),
+    )
+    .command(
+        "destroy [tag]",
+        "Delete a site you own from asap-static.site",
+        (yargs: Argv) =>
+            yargs
+                .positional("tag", {
+                    describe: "Site to delete",
+                    type: "string",
+                    demandOption: true,
+                }),
+        (argv) => asapDestroy(argv.tag)
     )
     .help("h")
     .alias("h", "help")

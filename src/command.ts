@@ -60,6 +60,12 @@ const asapDeploy = async (dirPath: string, tag: string) => {
         );
     }
 
+    const siteList = getSiteList()
+    if (tag in siteList) {
+        console.log(pc.yellow(`\nSite already exists, removing and redeploying...`))
+        await asapDestroy(tag)
+    }
+
     let tempDir: string | null = null
     const spinner = ora("Preparing upload...").start();
 

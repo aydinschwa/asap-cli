@@ -27,7 +27,14 @@ const asapDeploy = async (dirPath: string, tag: string) => {
             if (!fsSync.lstatSync(value).isDirectory()) return "Must be a directory";
             return true;
         },
-    });
+    },
+        {
+            onCancel: () => {
+                console.log(pc.yellow("\nDeploy cancelled"));
+                process.exit(0);
+            },
+        },
+    );
 
     // let user pick subdomain name if they didn't specify a tag in the deploy command
     if (!tag) {
